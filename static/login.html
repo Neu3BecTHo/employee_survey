@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему опросов</title>
+    <meta name="description" content="Вход в систему внутренних опросов сотрудников">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <h1>Система опросов</h1>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="login-section">
+            <div class="login-container">
+                <h1>Вход в систему</h1>
+                <p>Выберите себя из списка пользователей для входа в систему опросов.</p>
+
+                <div id="loading" class="loading">
+                    Загрузка пользователей...
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;">
+                    Ошибка загрузки пользователей. Попробуйте обновить страницу.
+                </div>
+
+                <div id="user-list" class="user-list" style="display: none;">
+                    <h2>Выберите пользователя:</h2>
+                    <div id="users-container" class="users-container">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/login.js"></script>
+</body>
+</html>
