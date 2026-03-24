@@ -26,7 +26,7 @@ class TakeSurveyPage {
             errorMessage.style.display = 'none';
             surveyContainer.style.display = 'none';
 
-            const surveyData = await window.app.apiRequest(`/surveys/${this.surveyId}`);
+            const surveyData = await window.app.apiRequest(`/api/surveys/${this.surveyId}`);
             this.survey = surveyData;
 
             // Update title and description
@@ -54,6 +54,11 @@ class TakeSurveyPage {
         const questionsContainer = document.getElementById('questions-container');
         questionsContainer.innerHTML = '';
 
+        if (!this.survey.questions || this.survey.questions.length === 0) {
+            questionsContainer.innerHTML = '<div class="empty-state"><h2>Вопросов не найдено</h2><p>У этого опроса пока нет вопросов.</p></div>';
+            return;
+        }
+
         this.survey.questions.forEach((question, index) => {
             const questionCard = document.createElement('div');
             questionCard.className = `question-card ${question.is_required ? 'required' : ''}`;
@@ -64,14 +69,18 @@ class TakeSurveyPage {
 
             if (question.type === 'single_choice') {
                 questionHTML += '<div class="radio-group">';
-                question.options.forEach(option => {
-                    questionHTML += `
-                        <label class="radio-option">
-                            <input type="radio" name="question_${question.id}" value="${option}" required="${question.is_required}">
-                            ${option}
-                        </label>
-                    `;
-                });
+                if (question.options && question.options.length > 0) {
+                    question.options.forEach(option => {
+                        questionHTML += `
+                            <label class="radio-option">
+                                <input type="radio" name="question_${question.id}" value="${option}" required="${question.is_required}">
+                                ${option}
+                            </label>
+                        `;
+                    });
+                } else {
+                    questionHTML += '<p class="error">Варианты ответа не найдены</p>';
+                }
                 questionHTML += '</div>';
             } else if (question.type === 'text') {
                 questionHTML += `
@@ -118,7 +127,7 @@ class TakeSurveyPage {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Отправка...';
 
-                await window.app.apiRequest(`/surveys/${this.surveyId}/responses`, {
+                await window.app.apiRequest(`/api/surveys/${this.surveyId}/responses`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -144,6 +153,10 @@ class TakeSurveyPage {
     }
 
     validateAnswers(answers) {
+        if (!this.survey.questions || this.survey.questions.length === 0) {
+            return false;
+        }
+
         const questionMap = {};
         this.survey.questions.forEach(q => {
             questionMap[q.id] = q;

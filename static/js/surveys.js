@@ -1,127 +1,184 @@
-// surveys.js - Surveys list and management logic
-
-class SurveysManager {
+// surveys.js - Main surveys page functionality
+class SurveysPage {
     constructor() {
+        this.surveys = [];
+        this.userResponses = [];
+        this.currentUser = null;
         this.init();
     }
 
     init() {
+        this.setupEventListeners();
+        this.loadCurrentUser();
+        this.loadUserResponses();
         this.loadSurveys();
+    }
+
+    setupEventListeners() {
+        // Create survey button
+        const createBtn = document.getElementById('create-survey-btn');
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                if (window.surveyApp) {
+                    window.surveyApp.showCreateSurveyModal();
+                }
+            });
+        }
+
+        // Logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => window.app.logout());
+        }
+    }
+
+    loadCurrentUser() {
+        if (window.app && window.app.currentUser) {
+            this.currentUser = window.app.currentUser;
+            this.updateUIForUserRole();
+        }
+    }
+
+    updateUIForUserRole() {
+        const createBtn = document.getElementById('create-survey-btn');
+        if (createBtn && this.currentUser) {
+            createBtn.style.display = this.currentUser.role === 'admin' ? 'block' : 'none';
+        }
+    }
+
+    async loadUserResponses() {
+        try {
+            if (window.app && window.app.isLoggedIn()) {
+                this.userResponses = await window.app.apiRequest('/api/surveys/my');
+            }
+        } catch (error) {
+            console.error('Error loading user responses:', error);
+        }
     }
 
     async loadSurveys() {
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('error-message');
-        const emptyState = document.getElementById('empty-state');
-        const surveysList = document.getElementById('surveys-list');
+        const surveysContainer = document.getElementById('surveys-container');
 
         try {
             loading.style.display = 'block';
             errorMessage.style.display = 'none';
-            emptyState.style.display = 'none';
-            surveysList.style.display = 'none';
+            surveysContainer.style.display = 'none';
 
-            const surveys = await window.app.apiRequest('/surveys');
-
+            this.surveys = await window.app.apiRequest('/api/surveys');
+            
             loading.style.display = 'none';
-
-            if (surveys.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                this.renderSurveys(surveys);
-                surveysList.style.display = 'block';
-            }
+            surveysContainer.style.display = 'block';
+            this.renderSurveys();
 
         } catch (error) {
             console.error('Error loading surveys:', error);
             loading.style.display = 'none';
             errorMessage.style.display = 'block';
-            errorMessage.textContent = 'Ошибка загрузки опросов. Попробуйте обновить страницу.';
         }
     }
 
-    renderSurveys(surveys) {
-        const surveysList = document.getElementById('surveys-list');
-        surveysList.innerHTML = '';
+    renderSurveys() {
+        const container = document.getElementById('surveys-list');
+        container.innerHTML = '';
 
-        surveys.forEach(survey => {
-            const surveyCard = document.createElement('div');
-            surveyCard.className = `survey-card ${window.app.getStatusClass(survey.status)}`;
-
-            const actions = this.getSurveyActions(survey);
-
-            surveyCard.innerHTML = `
-                <h3>${survey.title}</h3>
-                <p>${survey.description || 'Без описания'}</p>
-                <div class="survey-meta">
-                    <span>Статус: ${window.app.getStatusText(survey.status)}</span>
-                    <span>Создан: ${window.app.formatDate(survey.created_at)}</span>
-                </div>
-                <div class="survey-actions">
-                    ${actions}
+        if (this.surveys.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h2>Опросов пока нет</h2>
+                    <p>${this.currentUser && this.currentUser.role === 'admin' ? 'Создайте первый опрос для начала работы.' : 'Опросы появятся здесь, когда администраторы их создадут.'}</p>
+                    ${this.currentUser && this.currentUser.role === 'admin' ? '<button class="btn btn-primary" onclick="window.surveyApp.showCreateSurveyModal()">➕ Создать опрос</button>' : ''}
                 </div>
             `;
+            return;
+        }
 
-            surveysList.appendChild(surveyCard);
+        this.surveys.forEach(survey => {
+            const hasResponded = this.userResponses && Array.isArray(this.userResponses) && this.userResponses.some(response => response.survey_id === survey.id);
+            const surveyCard = this.createSurveyCard(survey, hasResponded);
+            container.appendChild(surveyCard);
         });
     }
 
-    getSurveyActions(survey) {
-        const userRole = window.app.currentUser.role;
-        let actions = '';
-
-        if (userRole === 'admin') {
-            if (survey.status === 'draft') {
-                actions += `<button class="btn btn-success" onclick="surveysManager.openSurvey(${survey.id})">Открыть</button>`;
-                actions += `<button class="btn btn-primary" onclick="window.location.href='/admin/surveys/${survey.id}'">Редактировать</button>`;
-            } else if (survey.status === 'open') {
-                actions += `<button class="btn btn-danger" onclick="surveysManager.closeSurvey(${survey.id})">Закрыть</button>`;
-                actions += `<button class="btn btn-secondary" onclick="window.location.href='/admin/surveys/${survey.id}/results'">Результаты</button>`;
-            } else {
-                actions += `<button class="btn btn-secondary" onclick="window.location.href='/admin/surveys/${survey.id}/results'">Результаты</button>`;
-            }
-        } else {
-            // Employee actions
-            if (survey.status === 'open') {
-                actions += `<button class="btn btn-primary" onclick="window.location.href='/surveys/${survey.id}/take'">Пройти опрос</button>`;
-            } else if (survey.status === 'closed') {
-                actions += `<button class="btn btn-secondary" onclick="window.location.href='/surveys/${survey.id}/results'">Посмотреть ответы</button>`;
-            }
-        }
-
-        return actions;
+    createSurveyCard(survey, hasResponded) {
+        const card = document.createElement('div');
+        card.className = 'survey-card';
+        
+        const statusBadge = this.getStatusBadge(survey.status);
+        const actionButton = this.getActionButton(survey, hasResponded);
+        
+        card.innerHTML = `
+            <div class="survey-card-content">
+                <div class="survey-header">
+                    <h3>${survey.title}</h3>
+                    <div class="survey-meta">
+                        ${statusBadge}
+                        <span class="survey-date">${new Date(survey.created_at).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                </div>
+                <div class="survey-content">
+                    <p>${survey.description || 'Без описания'}</p>
+                </div>
+                <div class="survey-actions">
+                    ${actionButton}
+                    ${this.currentUser && this.currentUser.role === 'admin' ? `
+                        <a href="/admin/surveys/${survey.id}" class="btn btn-secondary btn-sm">
+                            ✏️ Редактировать
+                        </a>
+                        <a href="/surveys/${survey.id}/results" class="btn btn-secondary btn-sm">
+                            📊 Результаты
+                        </a>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        return card;
     }
 
-    async openSurvey(surveyId) {
-        try {
-            await window.app.apiRequest(`/surveys/${surveyId}/open`, { method: 'POST' });
-            this.loadSurveys();
-            window.app.showMessage('Опрос открыт!', 'success');
-        } catch (error) {
-            console.error('Error opening survey:', error);
-            window.app.showMessage('Ошибка при открытии опроса', 'error');
-        }
+    getStatusBadge(status) {
+        const badges = {
+            'draft': '<span class="status-badge draft">📝 Черновик</span>',
+            'open': '<span class="status-badge open">📢 Открыт</span>',
+            'closed': '<span class="status-badge closed">🔒 Закрыт</span>'
+        };
+        return badges[status] || badges['draft'];
     }
 
-    async closeSurvey(surveyId) {
-        try {
-            await window.app.apiRequest(`/surveys/${surveyId}/close`, { method: 'POST' });
-            this.loadSurveys();
-            window.app.showMessage('Опрос закрыт!', 'success');
-        } catch (error) {
-            console.error('Error closing survey:', error);
-            window.app.showMessage('Ошибка при закрытии опроса', 'error');
+    getActionButton(survey, hasResponded) {
+        if (hasResponded) {
+            const userResponse = this.userResponses && Array.isArray(this.userResponses) && this.userResponses.find(r => r.survey_id === survey.id);
+            if (userResponse) {
+                return `
+                    <a href="/surveys/responses/${userResponse.id}" class="btn btn-secondary btn-sm">
+                        📝 Мои ответы
+                    </a>
+                `;
+            }
         }
+
+        if (survey.status === 'open') {
+            return `
+                <a href="/surveys/${survey.id}/take" class="btn btn-primary btn-sm">
+                    📝 Пройти опрос
+                </a>
+            `;
+        }
+
+        if (survey.status === 'closed') {
+            return `
+                <a href="/surveys/${survey.id}/results" class="btn btn-secondary btn-sm">
+                    📊 Результаты
+                </a>
+            `;
+        }
+
+        return '<span class="btn btn-secondary btn-sm" disabled>📝 Недоступен</span>';
     }
 }
 
-// Global instance for onclick handlers
-let surveysManager;
-
-// Initialize surveys manager when DOM is loaded
+// Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    surveysManager = new SurveysManager();
+    window.surveysPage = new SurveysPage();
 });
-
-// Export for use in other scripts
-window.loadSurveys = () => surveysManager.loadSurveys();

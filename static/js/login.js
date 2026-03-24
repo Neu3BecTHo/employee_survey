@@ -1,49 +1,30 @@
-// login.js - Login page logic
-
+// Login Page with Enhanced UI
 class LoginPage {
     constructor() {
+        this.users = [];
         this.init();
     }
 
-    async init() {
-        await this.loadUsers();
+    init() {
+        this.loadUsers();
     }
 
     async loadUsers() {
         const loading = document.getElementById('loading');
         const errorMessage = document.getElementById('error-message');
-        const userList = document.getElementById('user-list');
         const usersContainer = document.getElementById('users-container');
 
         try {
             loading.style.display = 'block';
             errorMessage.style.display = 'none';
-            userList.style.display = 'none';
+            usersContainer.style.display = 'none';
 
-            const response = await fetch('/users');
-            if (!response.ok) {
-                throw new Error('Failed to load users');
-            }
-
-            const users = await response.json();
-
-            // Render users
-            usersContainer.innerHTML = '';
-            users.forEach(user => {
-                const userCard = document.createElement('div');
-                userCard.className = 'user-card';
-                userCard.onclick = () => this.loginAsUser(user);
-
-                userCard.innerHTML = `
-                    <h3>${user.name}</h3>
-                    <p>Роль: ${this.getRoleText(user.role)}</p>
-                `;
-
-                usersContainer.appendChild(userCard);
-            });
+            const users = await window.app.apiRequest('/users');
+            this.users = users;
 
             loading.style.display = 'none';
-            userList.style.display = 'block';
+            usersContainer.style.display = 'grid';
+            this.renderUsers();
 
         } catch (error) {
             console.error('Error loading users:', error);
@@ -52,26 +33,101 @@ class LoginPage {
         }
     }
 
-    getRoleText(role) {
-        const roleMap = {
-            'admin': 'Администратор',
-            'employee': 'Сотрудник'
-        };
-        return roleMap[role] || role;
+    renderUsers() {
+        const container = document.getElementById('users-container');
+        
+        container.innerHTML = this.users.map((user, index) => `
+            <div class="user-card" onclick="loginPage.selectUser(${user.id}, '${user.name}', '${user.role}')" style="animation-delay: ${index * 0.1}s">
+                <h4>${user.name}</h4>
+                <div class="user-role">${user.role === 'admin' ? '👑 Администратор' : '👤 Сотрудник'}</div>
+            </div>
+        `).join('');
     }
 
-    loginAsUser(user) {
-        // Store user info in localStorage
-        localStorage.setItem('user_id', user.id.toString());
-        localStorage.setItem('user_name', user.name);
-        localStorage.setItem('user_role', user.role);
+    selectUser(userId, userName, userRole) {
+        // Store user info with consistent keys
+        localStorage.setItem('user_id', userId);
+        localStorage.setItem('user_name', userName);
+        localStorage.setItem('user_role', userRole);
 
-        // Redirect to main page
-        window.location.href = '/';
+        // Show success message
+        this.showSuccessMessage(`Вы вошли как ${userName}`);
+
+        // Redirect to main page after a short delay
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 1000);
+    }
+
+    showSuccessMessage(message) {
+        // Remove existing messages
+        const existingMessage = document.querySelector('.message-toast');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+
+        // Create new message
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message-toast message-success';
+        messageDiv.innerHTML = `
+            <span class="message-icon">✅</span>
+            <span class="message-text">${message}</span>
+        `;
+
+        // Add styles
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideInRight 0.3s ease-out;
+        `;
+
+        document.body.appendChild(messageDiv);
     }
 }
 
-// Initialize login page when DOM is loaded
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .user-card {
+        animation: fadeInUp 0.3s ease-out;
+        animation-fill-mode: both;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize page when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new LoginPage();
+    window.loginPage = new LoginPage();
 });

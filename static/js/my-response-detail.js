@@ -1,0 +1,129 @@
+class MyResponseDetailPage {
+    constructor() {
+        this.responseId = null;
+        this.surveyId = null;
+        this.init();
+    }
+
+    async init() {
+        // Check if user is logged in
+        if (!window.app.isLoggedIn()) {
+            window.location.href = '/login';
+            return;
+        }
+
+        // Get response ID from URL
+        const urlParts = window.location.pathname.split('/');
+        this.responseId = parseInt(urlParts[urlParts.length - 1]);
+        
+        if (!this.responseId) {
+            window.location.href = '/surveys/my';
+            return;
+        }
+
+        // Setup event listeners
+        this.setupEventListeners();
+        
+        // Load response details
+        await this.loadResponseDetail();
+    }
+
+    setupEventListeners() {
+        // Logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => window.app.logout());
+        }
+    }
+
+    async loadResponseDetail() {
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const responseContainer = document.getElementById('response-container');
+
+        if (!loading || !errorMessage || !responseContainer) {
+            console.error('Required DOM elements not found');
+            return;
+        }
+
+        try {
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            responseContainer.style.display = 'none';
+
+            // Load response details
+            const response = await window.app.apiRequest(`/api/surveys/responses/${this.responseId}`);
+
+            // Update survey info
+            const titleElement = document.getElementById('survey-title');
+            const descElement = document.getElementById('survey-description');
+            const dateElement = document.getElementById('response-date');
+            
+            if (titleElement) titleElement.textContent = response.survey.title;
+            if (descElement) descElement.textContent = response.survey.description || '';
+            if (dateElement) dateElement.textContent = new Date(response.submitted_at).toLocaleDateString('ru-RU');
+
+            // Render answers
+            this.renderAnswers(response.answers, response.questions);
+
+            loading.style.display = 'none';
+            responseContainer.style.display = 'block';
+
+        } catch (error) {
+            console.error('Error loading response detail:', error);
+            loading.style.display = 'none';
+            errorMessage.style.display = 'block';
+            errorMessage.textContent = 'Ошибка загрузки ответов.';
+        }
+    }
+
+    renderAnswers(answers, questions) {
+        const answersList = document.getElementById('answers-list');
+        answersList.innerHTML = '';
+
+        // Handle null or undefined answers
+        if (!answers || !Array.isArray(answers)) {
+            answersList.innerHTML = '<div class="error-message">Нет доступных ответов</div>';
+            return;
+        }
+
+        // Create a map of question_id to answer
+        const answerMap = {};
+        answers.forEach(answer => {
+            answerMap[answer.question_id] = answer;
+        });
+
+        questions.forEach((question, index) => {
+            const answer = answerMap[question.id];
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'answer-item';
+            
+            let answerContent = '';
+            if (answer) {
+                if (question.type === 'text') {
+                    answerContent = `<p class="answer-text">${answer.value}</p>`;
+                } else if (question.type === 'single_choice') {
+                    answerContent = `<p class="answer-choice">${answer.value}</p>`;
+                }
+            } else {
+                answerContent = '<p class="no-answer">Нет ответа</p>';
+            }
+
+            answerDiv.innerHTML = `
+                <div class="answer-header">
+                    <h4>Вопрос ${index + 1}</h4>
+                </div>
+                <div class="answer-content">
+                    <p class="question-text">${question.text}</p>
+                    ${answerContent}
+                </div>
+            `;
+            answersList.appendChild(answerDiv);
+        });
+    }
+}
+
+// Initialize page when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new MyResponseDetailPage();
+});

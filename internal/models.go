@@ -23,30 +23,32 @@ type Survey struct {
 
 // SurveyQuestion represents a question in a survey
 type SurveyQuestion struct {
-	ID         int             `json:"id" db:"id"`
-	SurveyID   int             `json:"survey_id" db:"survey_id"`
-	Text       string          `json:"text" db:"text"`
-	Type       string          `json:"type" db:"type"`
-	IsRequired bool            `json:"is_required" db:"is_required"`
-	Options    []string        `json:"options,omitempty" db:"options"`
-	CreatedAt  time.Time       `json:"created_at" db:"created_at"`
+	ID         int       `json:"id" db:"id"`
+	SurveyID   int       `json:"survey_id" db:"survey_id"`
+	Text       string    `json:"text" db:"text"`
+	Type       string    `json:"type" db:"type"`
+	IsRequired bool      `json:"is_required" db:"is_required"`
+	Options    []string  `json:"options,omitempty" db:"options"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 }
 
 // SurveyResponse represents a user's response to a survey
 type SurveyResponse struct {
-	ID          int       `json:"id" db:"id"`
-	SurveyID    int       `json:"survey_id" db:"survey_id"`
-	UserID      int       `json:"user_id" db:"user_id"`
-	SubmittedAt time.Time `json:"submitted_at" db:"submitted_at"`
+	ID                int       `json:"id" db:"id"`
+	SurveyID          int       `json:"survey_id" db:"survey_id"`
+	UserID            int       `json:"user_id" db:"user_id"`
+	SubmittedAt       time.Time `json:"submitted_at" db:"submitted_at"`
+	SurveyTitle       string    `json:"survey_title" db:"survey_title"`
+	SurveyDescription string    `json:"survey_description" db:"survey_description"`
 }
 
 // SurveyAnswer represents an answer to a specific question
 type SurveyAnswer struct {
-	ID          int       `json:"id" db:"id"`
-	ResponseID  int       `json:"response_id" db:"response_id"`
-	QuestionID  int       `json:"question_id" db:"question_id"`
-	Value       string    `json:"value" db:"value"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	ID         int       `json:"id" db:"id"`
+	ResponseID int       `json:"response_id" db:"response_id"`
+	QuestionID int       `json:"question_id" db:"question_id"`
+	Value      string    `json:"value" db:"value"`
+	CreatedAt  time.Time `json:"created_at" db:"created_at"`
 }
 
 // Request/Response DTOs
@@ -55,6 +57,7 @@ type SurveyAnswer struct {
 type CreateSurveyRequest struct {
 	Title       string `json:"title" validate:"required,min=1,max=255"`
 	Description string `json:"description" validate:"max=1000"`
+	Status      string `json:"status" validate:"oneof=draft open closed"`
 }
 
 // CreateQuestionRequest represents the request to create a question
@@ -84,15 +87,26 @@ type SurveyWithQuestions struct {
 
 // SurveyResults represents aggregated results for a survey
 type SurveyResults struct {
-	Survey       Survey                    `json:"survey"`
-	TotalResponses int                      `json:"total_responses"`
-	QuestionResults []QuestionResult         `json:"question_results"`
+	Survey          Survey           `json:"survey"`
+	TotalResponses  int              `json:"total_responses"`
+	QuestionResults []QuestionResult `json:"question_results"`
 }
 
 // QuestionResult represents results for a specific question
 type QuestionResult struct {
 	Question SurveyQuestion `json:"question"`
 	Answers  []AnswerCount  `json:"answers,omitempty"`
+}
+
+// ResponseDetail represents detailed information about a user's response
+type ResponseDetail struct {
+	ID          int              `json:"id"`
+	SurveyID    int              `json:"survey_id"`
+	UserID      int              `json:"user_id"`
+	SubmittedAt time.Time        `json:"submitted_at"`
+	Survey      Survey           `json:"survey"`
+	Questions   []SurveyQuestion `json:"questions"`
+	Answers     []SurveyAnswer   `json:"answers"`
 }
 
 // AnswerCount represents count of answers for text questions

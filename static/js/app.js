@@ -31,17 +31,35 @@ class SurveyApp {
         }
     }
 
+    isLoggedIn() {
+        return this.currentUser !== null;
+    }
+
     updateUIForUser() {
         const userElement = document.getElementById('current-user');
+        const roleElement = document.getElementById('user-role');
         const adminControls = document.getElementById('admin-controls');
 
         if (userElement) {
-            userElement.textContent = `${this.currentUser.name} (${this.currentUser.role})`;
+            userElement.textContent = this.currentUser.name;
+        }
+
+        if (roleElement) {
+            roleElement.textContent = this.getRoleText(this.currentUser.role);
+            roleElement.className = `role-text`;
         }
 
         if (adminControls && this.currentUser.role === 'admin') {
             adminControls.style.display = 'block';
         }
+    }
+
+    getRoleText(role) {
+        const roleTexts = {
+            'admin': 'Администратор',
+            'employee': 'Сотрудник'
+        };
+        return roleTexts[role] || role;
     }
 
     setupEventListeners() {
@@ -98,22 +116,41 @@ class SurveyApp {
         });
     }
 
+    hideCreateSurveyModal() {
+        const modal = document.getElementById('create-survey-modal');
+        const form = document.getElementById('create-survey-form');
+        
+        if (modal) {
+            modal.style.display = 'none';
+        }
+        if (form) {
+            form.reset();
+        }
+    }
+
     async createSurvey(formData) {
         try {
-            const response = await this.apiRequest('/surveys', {
+            const data = {
+                title: formData.get('title'),
+                description: formData.get('description')
+            };
+            
+            console.log('Creating survey with data:', data);
+            console.log('Current user:', this.currentUser);
+            
+            const response = await this.apiRequest('/api/surveys', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    title: formData.get('title'),
-                    description: formData.get('description')
-                })
+                body: JSON.stringify(data)
             });
+            
+            console.log('Survey created response:', response);
 
             // Reload surveys list
-            if (window.loadSurveys) {
-                window.loadSurveys();
+            if (window.surveysPage) {
+                window.surveysPage.loadSurveys();
             }
 
             this.showMessage('Опрос успешно создан!', 'success');

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Опросы сотрудников</title>
+    <meta name="description" content="Веб-приложение для проведения внутренних опросов сотрудников и просмотра результатов">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <h1>Опросы сотрудников</h1>
+                <div class="nav-user">
+                    <div class="user-info">
+                        <span id="current-user">Загрузка...</span>
+                        <span id="user-role" class="role-text">Загрузка...</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-secondary">Выйти</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="surveys-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Доступные опросы</h2>
+                    <button id="create-survey-btn" class="btn btn-primary" style="display: none;">
+                        ➕ Создать опрос
+                    </button>
+                </div>
+
+                <div id="loading" class="loading">
+                    Загрузка опросов...
+                </div>
+                
+                <div id="error-message" class="error-message" style="display: none;">
+                    Ошибка загрузки опросов.
+                </div>
+
+                <div id="surveys-container" style="display: none;">
+                    <div id="surveys-list" class="surveys-list">
+                        <!-- Surveys will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <!-- Create Survey Modal -->
+    <div id="create-survey-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>➕ Создать новый опрос</h2>
+                <button class="modal-close" onclick="window.surveyApp.hideCreateSurveyModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="create-survey-form">
+                    <div class="form-group">
+                        <label for="survey-title">Название опроса</label>
+                        <input type="text" id="survey-title" name="title" required placeholder="Введите название опроса">
+                    </div>
+                    <div class="form-group">
+                        <label for="survey-description">Описание</label>
+                        <textarea id="survey-description" name="description" placeholder="Введите описание опроса"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary modal-cancel">Отмена</button>
+                        <button type="submit" class="btn btn-primary">Создать опрос</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/surveys.js"></script>
+</body>
+</html>

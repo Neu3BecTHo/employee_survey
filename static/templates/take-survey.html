@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прохождение опроса - Опросы сотрудников</title>
+    <meta name="description" content="Прохождение опроса сотрудников">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/survey.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <h1>Опросы сотрудников</h1>
+                <div class="nav-user">
+                    <div class="user-info">
+                        <span id="current-user">Загрузка...</span>
+                        <span id="user-role" class="role-text">Загрузка...</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-secondary">Выйти</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div id="loading" class="loading">
+            Загрузка опроса...
+        </div>
+        
+        <div id="error-message" class="error-message" style="display: none;">
+            Ошибка загрузки опроса.
+        </div>
+
+        <div id="survey-container" style="display: none;">
+            <div class="container">
+                <div class="survey-header">
+                    <h2 id="survey-title">Загрузка...</h2>
+                    <p id="survey-description">Загрузка...</p>
+                </div>
+
+                <form id="survey-form" class="survey-form">
+                    <div id="questions-container">
+                        <!-- Questions will be loaded here -->
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" onclick="window.location.href='/'" class="btn btn-secondary">
+                            ← Назад к опросам
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Отправить ответы
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/survey.js"></script>
+</body>
+</html>

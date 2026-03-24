@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Опросы сотрудников</title>
+    <meta name="description" content="Вход в систему опросов сотрудников">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body id="login-page">
+    <main>
+        <div class="login-container">
+            <div class="login-card">
+                <div id="loading" class="loading" style="display: none;">
+                    Вход в систему...
+                </div>
+                
+                <div id="error-message" class="error-message" style="display: none;">
+                    Ошибка входа. Попробуйте еще раз.
+                </div>
+
+                <div id="users-container" class="users-grid" style="display: none;">
+                    <!-- Users will be loaded here -->
+                </div>
+
+                <form id="login-form" style="display: none;">
+                    <div class="form-group">
+                        <label for="user-select">Выберите пользователя:</label>
+                        <select id="user-select" name="user_id" required>
+                            <option value="">-- Выберите пользователя --</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        🔐 Войти
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/login.js"></script>
+</body>
+</html>
