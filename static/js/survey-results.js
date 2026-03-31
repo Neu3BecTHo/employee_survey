@@ -22,16 +22,15 @@ class SurveyResultsPage {
         const resultsContainer = document.getElementById('results-container');
 
         if (!loading || !errorMessage || !resultsContainer) {
-            console.error('Required DOM elements not found');
             return;
         }
 
         try {
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            resultsContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            resultsContainer.classList.add('hidden');
 
-            const results = await window.app.apiRequest(`/api/surveys/${this.surveyId}/results`);
+            const results = await window.app.apiRequest(`/surveys/${this.surveyId}/results/data`);
 
             // Update survey info with null checks
             const titleElement = document.getElementById('survey-title');
@@ -45,13 +44,12 @@ class SurveyResultsPage {
             // Render question results
             this.renderQuestionResults(results.question_results);
 
-            loading.style.display = 'none';
-            resultsContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
 
         } catch (error) {
-            console.error('Error loading results:', error);
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
             if (errorMessage) {
                 errorMessage.textContent = 'Ошибка загрузки результатов. Возможно, у вас нет доступа к этим результатам.';
             }
@@ -62,7 +60,6 @@ class SurveyResultsPage {
         const questionsResults = document.getElementById('questions-results');
         
         if (!questionsResults) {
-            console.error('questions-results element not found');
             return;
         }
         

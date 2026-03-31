@@ -23,7 +23,7 @@ class TakeSurveyPage {
 
     async checkResponseStatus() {
         try {
-            const response = await window.app.apiRequest(`/api/surveys/${this.surveyId}/check-status`);
+            const response = await window.app.apiRequest(`/surveys/${this.surveyId}/check-status`);
             if (response.has_responded) {
                 // Redirect to already responded page
                 window.location.href = `/surveys/${this.surveyId}/already-responded`;
@@ -31,7 +31,6 @@ class TakeSurveyPage {
             }
             return false;
         } catch (error) {
-            console.error('Error checking response status:', error);
             return false;
         }
     }
@@ -42,11 +41,11 @@ class TakeSurveyPage {
         const surveyContainer = document.getElementById('survey-container');
 
         try {
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            surveyContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            surveyContainer.classList.add('hidden');
 
-            const surveyData = await window.app.apiRequest(`/api/surveys/${this.surveyId}`);
+            const surveyData = await window.app.apiRequest(`/surveys/${this.surveyId}/data`);
             this.survey = surveyData;
 
             // Update title and description
@@ -56,16 +55,15 @@ class TakeSurveyPage {
             // Render questions
             this.renderQuestions();
 
-            loading.style.display = 'none';
-            surveyContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            surveyContainer.classList.remove('hidden');
 
             // Setup form submission
             this.setupFormSubmission();
 
         } catch (error) {
-            console.error('Error loading survey:', error);
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
             errorMessage.textContent = 'Ошибка загрузки опроса. Возможно, опрос не найден или закрыт.';
         }
     }
@@ -147,7 +145,7 @@ class TakeSurveyPage {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Отправка...';
 
-                await window.app.apiRequest(`/api/surveys/${this.surveyId}/responses`, {
+                await window.app.apiRequest(`/surveys/${this.surveyId}/responses`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -155,8 +153,8 @@ class TakeSurveyPage {
                     body: JSON.stringify({ answers })
                 });
 
-                form.style.display = 'none';
-                successMessage.style.display = 'block';
+                form.classList.add('hidden');
+                successMessage.classList.remove('hidden');
 
                 // Redirect to home after 3 seconds
                 setTimeout(() => {
@@ -164,10 +162,12 @@ class TakeSurveyPage {
                 }, 3000);
 
             } catch (error) {
-                console.error('Error submitting survey:', error);
-                window.app.showMessage('Ошибка при отправке ответов. Попробуйте еще раз.', 'error');
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Отправить ответы';
+                
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.classList.remove('hidden');
+                errorMessage.textContent = error.message || 'Ошибка при отправке ответов.';
             }
         });
     }

@@ -5,8 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Опрос уже пройден - Опросы сотрудников</title>
     <meta name="description" content="Вы уже прошли этот опрос">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    {{if .DevMode}}
     <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/survey.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <script src="/static/js/app.js"></script>
+    {{else}}
+    <link rel="stylesheet" href="/static/css/base.min.css">
+    <link rel="stylesheet" href="/static/css/components.min.css">
+    <script src="/static/js/app.min.js"></script>
+    {{end}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -28,20 +36,35 @@
     </header>
 
     <main>
-        <h1>Опрос уже пройден</h1>
-        <div class="container">
-            <div class="survey-card" style="text-align: center; padding: 40px;">
-                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
-                <h2>Вы уже прошли этот опрос!</h2>
-                <p style="margin: 20px 0; color: var(--text-secondary);">
+        <div class="container already-responded-wrapper">
+            <div class="card already-responded-card">
+                <div class="already-responded-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success-500)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                </div>
+                <h2 class="already-responded-title">Опрос уже пройден</h2>
+                <p class="already-responded-text">
                     Спасибо за ваше участие. Вы можете посмотреть свои ответы в разделе "Мои ответы".
                 </p>
-                <div class="form-actions" style="justify-content: center; margin-top: 30px;">
+                <div class="already-responded-actions">
                     <a href="/surveys/my" class="btn btn-primary">
-                        📋 Мои ответы
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Мои ответы
                     </a>
                     <a href="/" class="btn btn-secondary">
-                        ← Назад к опросам
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Назад к опросам
                     </a>
                 </div>
             </div>
@@ -54,7 +77,6 @@
         </div>
     </footer>
 
-    <script src="/static/js/app.js"></script>
     <script>
         // Initialize app to show user info
         document.addEventListener('DOMContentLoaded', () => {

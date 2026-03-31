@@ -6,8 +6,18 @@
     <title>Мои ответы - Опросы сотрудников</title>
     <meta name="description" content="Просмотр моих ответов на опросы">
     <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    {{if .DevMode}}
     <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/results.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/my-responses.js"></script>
+    {{else}}
+    <link rel="stylesheet" href="/static/css/base.min.css">
+    <link rel="stylesheet" href="/static/css/components.min.css">
+    <script src="/static/js/app.min.js"></script>
+    <script src="/static/js/my-responses.min.js"></script>
+    {{end}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,29 +39,54 @@
     </header>
 
     <main>
-        <h1>Мои ответы</h1>
-        <div id="loading" class="loading">
-            Загрузка ответов...
-        </div>
-        
-        <div id="error-message" class="error-message" style="display: none;">
-            Ошибка загрузки ответов.
-        </div>
+        <div class="container">
+            <div class="page-header-section">
+                <h1 class="page-title">Мои ответы</h1>
+                <p class="page-subtitle">История ваших ответов на опросы</p>
+            </div>
 
-        <div id="responses-container" style="display: none;">
-            <div class="container">
-                <div class="section-header">
-                    <h2>📋 Мои ответы</h2>
-                    <div class="form-actions">
-                        <button onclick="window.location.href='/'" class="btn btn-secondary">
-                            ← К опросам
-                        </button>
-                    </div>
-                </div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>Загрузка ответов...</span>
+            </div>
+            
+            <div id="error-message" class="message message-error hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Ошибка загрузки ответов</span>
+            </div>
 
-                <div id="responses-list" class="responses-list">
+            <div id="responses-container" class="hidden">
+                <div id="responses-list" class="surveys-grid">
                     <!-- Responses will be loaded here -->
                 </div>
+
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="empty-state-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Нет ответов</h3>
+                    <p>Вы еще не прошли ни одного опроса</p>
+                    <button onclick="window.location.href='/'" class="btn btn-primary btn-margin-top">
+                        Перейти к опросам
+                    </button>
+                </div>
+            </div>
+
+            <div class="actions-centered">
+                <button onclick="window.location.href='/'" class="btn btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Назад к опросам
+                </button>
             </div>
         </div>
     </main>
@@ -62,7 +97,5 @@
         </div>
     </footer>
 
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/my-responses.js"></script>
 </body>
 </html>

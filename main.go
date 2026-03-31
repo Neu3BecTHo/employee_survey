@@ -4,26 +4,44 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"html/template"
 	"log"
 	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 type App struct {
-	Router *mux.Router
-	DB     *sql.DB
+	Router  *mux.Router
+	DB      *sql.DB
+	DevMode bool
 }
 
 func (a *App) Initialize(user, password, dbname, host string, port int) {
+	// Load .env file if exists
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	// Check DEV_MODE environment variable
+	devMode := os.Getenv("DEV_MODE")
+	a.DevMode = strings.ToLower(devMode) == "true" || devMode == "1"
+	if a.DevMode {
+		log.Println("Running in DEVELOPMENT mode (unminified files)")
+	} else {
+		log.Println("Running in PRODUCTION mode (minified files)")
+	}
+
 	connectionString := "host=" + host + " port=" + strconv.Itoa(port) + " user=" + user + " password=" + password + " dbname=" + dbname + " sslmode=disable"
 
 	// Force IPv4 connection
@@ -159,41 +177,17 @@ func (a *App) initializeRoutes() {
 
 	log.Println("MIME types registered successfully")
 
-	// Frontend routes (must be first to avoid conflicts with API)
-	a.Router.HandleFunc("/", a.serveIndex).Methods("GET")
-	a.Router.HandleFunc("/login", a.serveLogin).Methods("GET")
-	a.Router.HandleFunc("/surveys/{id:[0-9]+}/take", a.serveSurvey).Methods("GET")
-	a.Router.HandleFunc("/surveys/{id:[0-9]+}/already-responded", a.serveAlreadyResponded).Methods("GET")
-	a.Router.HandleFunc("/surveys/my", a.serveMyResponses).Methods("GET")
-	a.Router.HandleFunc("/surveys/responses/{responseId:[0-9]+}", a.serveMyResponseDetail).Methods("GET")
-	a.Router.HandleFunc("/admin/surveys", a.serveAdminSurveys).Methods("GET")
-	a.Router.HandleFunc("/admin/surveys/{id:[0-9]+}", a.serveAdminSurvey).Methods("GET")
-	a.Router.HandleFunc("/admin/surveys/{id:[0-9]+}/results", a.serveResults).Methods("GET")
-	a.Router.HandleFunc("/surveys/{id:[0-9]+}/results", a.serveResults).Methods("GET")
-
-	// Public endpoints (with /api prefix)
-	a.Router.HandleFunc("/api/users", a.getUsers).Methods("GET")
-	a.Router.HandleFunc("/api/surveys", a.getSurveys).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/my", a.getMyResponses).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/responses/{responseId:[0-9]+}", a.getResponseDetail).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/check-status", a.checkSurveyResponseStatus).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}", a.getSurvey).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/responses", a.submitResponse).Methods("POST")
-	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/results", a.getResults).Methods("GET")
+	// Public API endpoints (JSON data - must be BEFORE frontend routes)
+	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/surveys", a.getSurveys).Methods("GET")
-	a.Router.HandleFunc("/surveys/{id:[0-9]+}", a.getSurvey).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/data", a.getSurvey).Methods("GET")
 	a.Router.HandleFunc("/surveys/{id:[0-9]+}/responses", a.submitResponse).Methods("POST")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/results/data", a.getResults).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/check-status", a.checkSurveyResponseStatus).Methods("GET")
+	a.Router.HandleFunc("/surveys/my/data", a.getMyResponses).Methods("GET")
+	a.Router.HandleFunc("/surveys/responses/{responseId:[0-9]+}/data", a.getResponseDetail).Methods("GET")
 
-	// Admin endpoints (with /api prefix)
-	a.Router.Handle("/api/surveys", a.requireRole("admin")(http.HandlerFunc(a.createSurvey))).Methods("POST")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}", a.requireRole("admin")(http.HandlerFunc(a.updateSurvey))).Methods("PUT")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}/questions", a.requireRole("admin")(http.HandlerFunc(a.createQuestion))).Methods("POST")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}/questions/{questionId:[0-9]+}", a.requireRole("admin")(http.HandlerFunc(a.updateQuestion))).Methods("PUT")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}/questions/{questionId:[0-9]+}", a.requireRole("admin")(http.HandlerFunc(a.deleteQuestion))).Methods("DELETE")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}/open", a.requireRole("admin")(http.HandlerFunc(a.openSurvey))).Methods("POST")
-	a.Router.Handle("/api/surveys/{id:[0-9]+}/close", a.requireRole("admin")(http.HandlerFunc(a.closeSurvey))).Methods("POST")
-
-	// Admin endpoints (without /api prefix - according to TZ)
+	// Admin API endpoints
 	a.Router.Handle("/surveys", a.requireRole("admin")(http.HandlerFunc(a.createSurvey))).Methods("POST")
 	a.Router.Handle("/surveys/{id:[0-9]+}", a.requireRole("admin")(http.HandlerFunc(a.updateSurvey))).Methods("PUT")
 	a.Router.Handle("/surveys/{id:[0-9]+}/questions", a.requireRole("admin")(http.HandlerFunc(a.createQuestion))).Methods("POST")
@@ -201,6 +195,18 @@ func (a *App) initializeRoutes() {
 	a.Router.Handle("/surveys/{id:[0-9]+}/questions/{questionId:[0-9]+}", a.requireRole("admin")(http.HandlerFunc(a.deleteQuestion))).Methods("DELETE")
 	a.Router.Handle("/surveys/{id:[0-9]+}/open", a.requireRole("admin")(http.HandlerFunc(a.openSurvey))).Methods("POST")
 	a.Router.Handle("/surveys/{id:[0-9]+}/close", a.requireRole("admin")(http.HandlerFunc(a.closeSurvey))).Methods("POST")
+
+	// Frontend routes (AFTER API routes)
+	a.Router.HandleFunc("/", a.serveIndex).Methods("GET")
+	a.Router.HandleFunc("/login", a.serveLogin).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/take", a.serveSurvey).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/already-responded", a.serveAlreadyResponded).Methods("GET")
+	a.Router.HandleFunc("/surveys/responses/{responseId:[0-9]+}", a.serveMyResponseDetail).Methods("GET")
+	a.Router.HandleFunc("/admin/surveys", a.serveAdminSurveys).Methods("GET")
+	a.Router.HandleFunc("/admin/surveys/{id:[0-9]+}", a.serveAdminSurvey).Methods("GET")
+	a.Router.HandleFunc("/admin/surveys/{id:[0-9]+}/results", a.serveResults).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/results", a.serveResults).Methods("GET")
+	a.Router.HandleFunc("/surveys/my", a.serveMyResponses).Methods("GET")
 
 	// Static files with custom MIME type handling
 	a.Router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", &customFileServer{root: http.Dir("./static/")}))
@@ -287,39 +293,59 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
+// Template data with DevMode type
+type TemplateData struct {
+	DevMode bool
+}
+
+// renderTemplate renders HTML template with DevMode flag
+func (a *App) renderTemplate(w http.ResponseWriter, templatePath string) {
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data := TemplateData{
+		DevMode: a.DevMode,
+	}
+
+	tmpl.Execute(w, data)
+}
+
 // Frontend page handlers
 func (a *App) serveIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/index.html")
+	a.renderTemplate(w, "./static/templates/index.html")
 }
 
 func (a *App) serveLogin(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/login.html")
+	a.renderTemplate(w, "./static/templates/login.html")
 }
 
 func (a *App) serveSurvey(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/take-survey.html")
+	a.renderTemplate(w, "./static/templates/take-survey.html")
 }
 
 func (a *App) serveAlreadyResponded(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/already-responded.html")
+	a.renderTemplate(w, "./static/templates/already-responded.html")
 }
 
 func (a *App) serveAdminSurveys(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/index.html")
+	a.renderTemplate(w, "./static/templates/index.html")
 }
 
 func (a *App) serveAdminSurvey(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/admin-survey.html")
+	a.renderTemplate(w, "./static/templates/admin-survey.html")
 }
 
 func (a *App) serveResults(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/survey-results.html")
+	a.renderTemplate(w, "./static/templates/survey-results.html")
 }
 
 func (a *App) serveMyResponses(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/my-responses.html")
+	a.renderTemplate(w, "./static/templates/my-responses.html")
 }
 
 func (a *App) serveMyResponseDetail(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./static/templates/my-response-detail.html")
+	a.renderTemplate(w, "./static/templates/my-response-detail.html")
 }

@@ -1,9 +1,7 @@
 // admin-survey.js - Admin survey management functionality
-console.log('admin-survey.js loaded - version 2');
 
 class AdminSurveyPage {
     constructor() {
-        console.log('AdminSurveyPage constructor called');
         this.surveyId = null;
         this.survey = null;
         this.questions = [];
@@ -75,6 +73,14 @@ class AdminSurveyPage {
                     this.toggleOptionsGroup(e.target.value);
                 });
             }
+
+            // Add option button
+            const addOptionBtn = document.getElementById('add-option-btn');
+            if (addOptionBtn) {
+                addOptionBtn.addEventListener('click', () => {
+                    this.addOption();
+                });
+            }
         }
 
         // Edit question form
@@ -107,22 +113,21 @@ class AdminSurveyPage {
             const errorMessage = document.getElementById('error-message');
             const surveyContainer = document.getElementById('survey-container');
 
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            surveyContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            surveyContainer.classList.add('hidden');
 
-            this.survey = await window.app.apiRequest(`/api/surveys/${this.surveyId}`);
+            this.survey = await window.app.apiRequest(`/surveys/${this.surveyId}/data`);
             
-            loading.style.display = 'none';
-            surveyContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            surveyContainer.classList.remove('hidden');
             this.renderSurvey();
 
         } catch (error) {
-            console.error('Error loading survey:', error);
             const loading = document.getElementById('loading');
             const errorMessage = document.getElementById('error-message');
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
         }
     }
 
@@ -147,17 +152,12 @@ class AdminSurveyPage {
     }
 
     async loadQuestions() {
-        console.log('loadQuestions called for survey:', this.surveyId);
         try {
-            console.log('Loading questions for survey:', this.surveyId);
             // Use getSurvey endpoint which includes questions
-            const surveyWithQuestions = await window.app.apiRequest(`/api/surveys/${this.surveyId}`);
-            console.log('Survey with questions loaded:', surveyWithQuestions);
+            const surveyWithQuestions = await window.app.apiRequest(`/surveys/${this.surveyId}/data`);
             this.questions = surveyWithQuestions.questions || [];
-            console.log('Questions extracted:', this.questions);
             this.renderQuestions();
         } catch (error) {
-            console.error('Error loading questions:', error);
             this.questions = [];
             this.renderQuestions();
         }
@@ -220,7 +220,7 @@ class AdminSurveyPage {
                 status: formData.get('status')
             };
 
-            await window.app.apiRequest(`/api/surveys/${this.surveyId}`, {
+            await window.app.apiRequest(`/surveys/${this.surveyId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -235,15 +235,20 @@ class AdminSurveyPage {
             await this.loadSurvey();
 
         } catch (error) {
-            console.error('Error updating survey:', error);
             this.showMessage('Ошибка при обновлении опроса', 'error');
         }
     }
 
     showAddQuestionForm() {
         const modal = document.getElementById('add-question-modal');
-        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
         this.resetAddQuestionForm();
+        
+        // Show options field if single_choice is selected
+        const questionType = document.getElementById('question-type');
+        if (questionType) {
+            this.toggleOptionsGroup(questionType.value);
+        }
         
         // Close modal when clicking outside
         modal.onclick = (e) => {
@@ -255,7 +260,7 @@ class AdminSurveyPage {
 
     hideAddQuestionModal() {
         const modal = document.getElementById('add-question-modal');
-        modal.style.display = 'none';
+        modal.classList.add('hidden');
         modal.onclick = null;
     }
 
@@ -272,9 +277,13 @@ class AdminSurveyPage {
     }
 
     toggleOptionsGroup(type) {
-        const optionsGroup = document.getElementById('options-group');
-        if (optionsGroup) {
-            optionsGroup.style.display = type === 'single_choice' ? 'block' : 'none';
+        const optionsSection = document.getElementById('options-section');
+        if (optionsSection) {
+            if (type === 'single_choice') {
+                optionsSection.classList.remove('hidden');
+            } else {
+                optionsSection.classList.add('hidden');
+            }
         }
     }
 
@@ -284,9 +293,9 @@ class AdminSurveyPage {
         
         const optionCount = container.children.length;
         const optionDiv = document.createElement('div');
-        optionDiv.className = 'option-input';
+        optionDiv.className = 'option-input-group';
         optionDiv.innerHTML = `
-            <input type="text" name="option_${optionCount}" placeholder="Вариант ответа ${optionCount + 1}" required>
+            <input type="text" class="option-input" name="option_${optionCount}" placeholder="Вариант ответа ${optionCount + 1}" required>
             <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">🗑️</button>
         `;
         container.appendChild(optionDiv);
@@ -301,9 +310,6 @@ class AdminSurveyPage {
                 is_required: formData.has('is_required')
             };
 
-            console.log('Adding question:', data);
-            console.log('Survey ID:', this.surveyId);
-            console.log('Current user:', this.currentUser);
 
             // Add options for single_choice questions
             if (data.type === 'single_choice') {
@@ -321,21 +327,19 @@ class AdminSurveyPage {
                 }
             }
 
-            const response = await window.app.apiRequest(`/api/surveys/${this.surveyId}/questions`, {
+            const response = await window.app.apiRequest(`/surveys/${this.surveyId}/questions`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data)
             });
-            console.log('Question added response:', response);
             
             this.showMessage('Вопрос успешно добавлен!', 'success');
             this.hideAddQuestionModal();
             await this.loadQuestions();
 
         } catch (error) {
-            console.error('Error adding question:', error);
             this.showMessage('Ошибка при добавлении вопроса: ' + error.message, 'error');
         }
     }
@@ -345,7 +349,10 @@ class AdminSurveyPage {
         if (!question) return;
 
         const modal = document.getElementById('edit-question-modal');
-        modal.style.display = 'flex';
+        if (!modal) {
+            return;
+        }
+        modal.classList.remove('hidden');
 
         // Fill form with question data
         document.getElementById('edit-question-id').value = question.id;
@@ -380,7 +387,7 @@ class AdminSurveyPage {
 
     hideEditQuestionModal() {
         const modal = document.getElementById('edit-question-modal');
-        modal.style.display = 'none';
+        modal.classList.add('hidden');
         modal.onclick = null;
     }
 
@@ -390,6 +397,14 @@ class AdminSurveyPage {
         const titleEl = document.getElementById('confirm-title');
         const messageEl = document.getElementById('confirm-message');
         const confirmBtn = document.getElementById('confirm-btn');
+        
+        if (!modal || !titleEl || !messageEl || !confirmBtn) {
+            // Fallback to native confirm
+            if (confirm(message)) {
+                onConfirm();
+            }
+            return;
+        }
         
         titleEl.textContent = title;
         messageEl.textContent = message;
@@ -404,7 +419,7 @@ class AdminSurveyPage {
             if (onConfirm) onConfirm();
         });
         
-        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
         
         // Close modal when clicking outside
         modal.onclick = (e) => {
@@ -416,7 +431,7 @@ class AdminSurveyPage {
 
     hideConfirmModal() {
         const modal = document.getElementById('confirm-modal');
-        modal.style.display = 'none';
+        modal.classList.add('hidden');
         modal.onclick = null;
     }
 
@@ -491,7 +506,7 @@ class AdminSurveyPage {
                 }
             }
 
-            await window.app.apiRequest(`/api/surveys/${this.surveyId}/questions/${questionId}`, {
+            await window.app.apiRequest(`/surveys/${this.surveyId}/questions/${questionId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -504,7 +519,6 @@ class AdminSurveyPage {
             await this.loadQuestions();
 
         } catch (error) {
-            console.error('Error updating question:', error);
             this.showMessage('Ошибка при обновлении вопроса', 'error');
         }
     }
@@ -515,7 +529,7 @@ class AdminSurveyPage {
             'Вы уверены, что хотите удалить этот вопрос? Это действие нельзя отменить.',
             async () => {
                 try {
-                    await window.app.apiRequest(`/api/surveys/${this.surveyId}/questions/${questionId}`, {
+                    await window.app.apiRequest(`/surveys/${this.surveyId}/questions/${questionId}`, {
                         method: 'DELETE'
                     });
                     
@@ -523,7 +537,6 @@ class AdminSurveyPage {
                     await this.loadQuestions();
 
                 } catch (error) {
-                    console.error('Error deleting question:', error);
                     this.showMessage('Ошибка при удалении вопроса', 'error');
                 }
             }

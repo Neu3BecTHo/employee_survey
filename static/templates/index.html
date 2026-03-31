@@ -4,10 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Опросы сотрудников</title>
-    <meta name="description" content="Веб-приложение для проведения внутренних опросов сотрудников и просмотра результатов">
+    <meta name="description" content="Веб-приложение для проведения внутренних опросов сотрудников">
     <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    {{if .DevMode}}
     <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/index.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/surveys.js"></script>
+    {{else}}
+    <link rel="stylesheet" href="/static/css/base.min.css">
+    <link rel="stylesheet" href="/static/css/components.min.css">
+    <script src="/static/js/app.min.js"></script>
+    <script src="/static/js/surveys.min.js"></script>
+    {{end}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,44 +39,69 @@
     </header>
 
     <main>
-        <h1>Доступные опросы</h1>
         <div class="container">
-            <div class="section-header">
-                <h2>Управление опросами</h2>
-                <button id="create-survey-btn" class="btn btn-primary" style="display: none;">
-                    ➕ Создать опрос
+            <div class="page-header-section">
+                <h1 class="page-title">Доступные опросы</h1>
+                <p class="page-subtitle">Просматривайте и проходите активные опросы</p>
+            </div>
+
+            <div class="page-toolbar">
+                <h2 class="page-toolbar-title">Все опросы</h2>
+                <button id="create-survey-btn" class="btn btn-primary hidden">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Создать опрос
                 </button>
             </div>
 
-                <div id="loading" class="loading">
-                    Загрузка опросов...
-                </div>
-                
-                <div id="error-message" class="error-message" style="display: none;">
-                    Ошибка загрузки опросов.
-                </div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>Загрузка опросов...</span>
+            </div>
+            
+            <div id="error-message" class="message message-error hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Ошибка загрузки опросов</span>
+            </div>
 
-                <div id="surveys-container" style="display: none;">
-                    <div id="surveys-list" class="surveys-list">
-                        <!-- Surveys will be loaded here -->
-                    </div>
+            <div id="surveys-container" class="hidden">
+                <div id="surveys-list" class="surveys-grid">
+                    <!-- Surveys will be loaded here -->
                 </div>
             </div>
-        </section>
+
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-state-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                </div>
+                <h3>Нет доступных опросов</h3>
+                <p>Пока нет активных опросов для прохождения</p>
+            </div>
+        </div>
     </main>
 
-    <footer>
-        <div class="footer-container">
-            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
-        </div>
-    </footer>
-
     <!-- Create Survey Modal -->
-    <div id="create-survey-modal" class="modal" style="display: none;">
-        <div class="modal-content">
+    <div id="create-survey-modal" class="modal-overlay hidden">
+        <div class="modal">
             <div class="modal-header">
-                <h2>➕ Создать новый опрос</h2>
-                <button class="modal-close" onclick="window.surveyApp.hideCreateSurveyModal()">&times;</button>
+                <h3>Создать новый опрос</h3>
+                <button class="modal-close" onclick="window.surveyApp.hideCreateSurveyModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
             <div class="modal-body">
                 <form id="create-survey-form">
@@ -76,13 +111,13 @@
                     </div>
                     <div class="form-group">
                         <label for="survey-description">Описание</label>
-                        <textarea id="survey-description" name="description" placeholder="Введите описание опроса"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary modal-cancel">Отмена</button>
-                        <button type="submit" class="btn btn-primary">Создать опрос</button>
+                        <textarea id="survey-description" name="description" rows="4" placeholder="Введите описание опроса"></textarea>
                     </div>
                 </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary modal-cancel" onclick="window.surveyApp.hideCreateSurveyModal()">Отмена</button>
+                <button type="submit" form="create-survey-form" class="btn btn-primary">Создать опрос</button>
             </div>
         </div>
     </div>
@@ -93,7 +128,5 @@
         </div>
     </footer>
 
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/surveys.js"></script>
 </body>
 </html>
