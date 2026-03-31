@@ -42,17 +42,16 @@ class MyResponseDetailPage {
         const responseContainer = document.getElementById('response-container');
 
         if (!loading || !errorMessage || !responseContainer) {
-            console.error('Required DOM elements not found');
             return;
         }
 
         try {
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            responseContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            responseContainer.classList.add('hidden');
 
             // Load response details
-            const response = await window.app.apiRequest(`/api/surveys/responses/${this.responseId}`);
+            const response = await window.app.apiRequest(`/surveys/responses/${this.responseId}/data`);
 
             // Update survey info
             const titleElement = document.getElementById('survey-title');
@@ -66,13 +65,12 @@ class MyResponseDetailPage {
             // Render answers
             this.renderAnswers(response.answers, response.questions);
 
-            loading.style.display = 'none';
-            responseContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            responseContainer.classList.remove('hidden');
 
         } catch (error) {
-            console.error('Error loading response detail:', error);
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
             errorMessage.textContent = 'Ошибка загрузки ответов.';
         }
     }

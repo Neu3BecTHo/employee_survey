@@ -7,11 +7,11 @@ class SurveysPage {
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
         this.loadCurrentUser();
-        this.loadUserResponses();
-        this.loadSurveys();
+        await this.loadUserResponses();
+        await this.loadSurveys();
     }
 
     setupEventListeners() {
@@ -42,17 +42,20 @@ class SurveysPage {
     updateUIForUserRole() {
         const createBtn = document.getElementById('create-survey-btn');
         if (createBtn && this.currentUser) {
-            createBtn.style.display = this.currentUser.role === 'admin' ? 'block' : 'none';
+            if (this.currentUser.role === 'admin') {
+                createBtn.classList.remove('hidden');
+            } else {
+                createBtn.classList.add('hidden');
+            }
         }
     }
 
     async loadUserResponses() {
         try {
             if (window.app && window.app.isLoggedIn()) {
-                this.userResponses = await window.app.apiRequest('/api/surveys/my');
+                this.userResponses = await window.app.apiRequest('/surveys/my/data');
             }
         } catch (error) {
-            console.error('Error loading user responses:', error);
         }
     }
 
@@ -62,20 +65,19 @@ class SurveysPage {
         const surveysContainer = document.getElementById('surveys-container');
 
         try {
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            surveysContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            surveysContainer.classList.add('hidden');
 
-            this.surveys = await window.app.apiRequest('/api/surveys');
+            this.surveys = await window.app.apiRequest('/surveys');
             
-            loading.style.display = 'none';
-            surveysContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            surveysContainer.classList.remove('hidden');
             this.renderSurveys();
 
         } catch (error) {
-            console.error('Error loading surveys:', error);
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
         }
     }
 

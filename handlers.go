@@ -4,24 +4,29 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
+
 	. "survey-app/internal"
 	models "survey-app/internal"
-
-	"github.com/gorilla/mux"
 )
 
 // User handlers
 func (a *App) getUsers(w http.ResponseWriter, r *http.Request) {
+	log.Printf("GET /users - User ID: %s", r.Header.Get("X-User-Id"))
+
 	users, err := a.getAllUsers()
 	if err != nil {
+		log.Printf("Error getting users: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Successfully retrieved %d users", len(users))
 	respondWithJSON(w, http.StatusOK, users)
 }
 
@@ -56,11 +61,12 @@ func (a *App) isUserAdmin(userID int) (bool, error) {
 
 // Survey handlers
 func (a *App) getSurveys(w http.ResponseWriter, r *http.Request) {
-	userIDStr := r.Header.Get("X-User-Id")
+	log.Printf("GET /surveys - User ID: %s", r.Header.Get("X-User-Id"))
+
 	var surveys []models.Survey
 	var err error
 
-	if userIDStr != "" {
+	if userIDStr := r.Header.Get("X-User-Id"); userIDStr != "" {
 		userID, _ := strconv.Atoi(userIDStr)
 		surveys, err = a.getSurveysForUser(userID)
 	} else {
@@ -68,10 +74,12 @@ func (a *App) getSurveys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
+		log.Printf("Error getting surveys: %v", err)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
+	log.Printf("Successfully retrieved %d surveys", len(surveys))
 	respondWithJSON(w, http.StatusOK, surveys)
 }
 
@@ -184,38 +192,38 @@ func (a *App) getSurveyByID(id int) (*Survey, error) {
 }
 
 func (a *App) createSurvey(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(int)
+	log.Printf("POST /surveys - User ID: %d (admin)", userID)
+
 	var req CreateSurveyRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
+		log.Printf("Error decoding survey creation request: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
 
-	// Validate required fields
-	if req.Title == "" {
-		respondWithError(w, http.StatusBadRequest, "Title is required")
-		return
-	}
+	log.Printf("Creating survey: %s", req.Title)
 
-	survey := Survey{
-		Title:       req.Title,
-		Description: req.Description,
-		Status:      "draft",
-		CreatedAt:   time.Now(),
-	}
-
-	err := a.DB.QueryRow(
-		"INSERT INTO surveys (title, description, status, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
-		survey.Title, survey.Description, survey.Status, survey.CreatedAt,
-	).Scan(&survey.ID)
+	var surveyID int
+	var err error
+	err = a.DB.QueryRow(
+		"INSERT INTO surveys (title, description, status, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id",
+		req.Title, req.Description, req.Status,
+	).Scan(&surveyID)
 
 	if err != nil {
+		log.Printf("Error creating survey: %v", err)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, survey)
+	log.Printf("Successfully created survey %d: %s", surveyID, req.Title)
+	respondWithJSON(w, http.StatusCreated, map[string]interface{}{
+		"id":      surveyID,
+		"message": "Survey created successfully",
+	})
 }
 
 func (a *App) updateSurvey(w http.ResponseWriter, r *http.Request) {
@@ -519,6 +527,7 @@ func (a *App) submitResponse(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	surveyID, err := strconv.Atoi(vars["id"])
 	if err != nil {
+		log.Printf("Error parsing survey ID: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid survey ID")
 		return
 	}
@@ -526,27 +535,35 @@ func (a *App) submitResponse(w http.ResponseWriter, r *http.Request) {
 	userIDStr := r.Header.Get("X-User-Id")
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
+		log.Printf("Error parsing user ID: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
+	log.Printf("POST /surveys/%d/responses - User ID: %s", surveyID, userIDStr)
+
 	var req SubmitResponseRequest
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&req); err != nil {
+		log.Printf("Error decoding request body: %v", err)
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 	defer r.Body.Close()
 
+	log.Printf("Request contains %d answers", len(req.Answers))
+
 	// Validate survey is open
 	var status string
 	err = a.DB.QueryRow("SELECT status FROM surveys WHERE id = $1", surveyID).Scan(&status)
 	if err != nil {
+		log.Printf("Error checking survey status: %v", err)
 		respondWithError(w, http.StatusNotFound, "Survey not found")
 		return
 	}
 
 	if status != "open" {
+		log.Printf("Survey %d is not open (status: %s), rejecting submission", surveyID, status)
 		respondWithError(w, http.StatusBadRequest, "Survey is not open")
 		return
 	}
@@ -555,6 +572,7 @@ func (a *App) submitResponse(w http.ResponseWriter, r *http.Request) {
 	var existingResponseID int
 	err = a.DB.QueryRow("SELECT id FROM survey_responses WHERE survey_id = $1 AND user_id = $2", surveyID, userID).Scan(&existingResponseID)
 	if err == nil {
+		log.Printf("User %d has already responded to survey %d (response ID: %d)", userID, surveyID, existingResponseID)
 		respondWithError(w, http.StatusConflict, "User has already responded to this survey")
 		return
 	}
@@ -562,12 +580,14 @@ func (a *App) submitResponse(w http.ResponseWriter, r *http.Request) {
 	// Get questions for validation
 	questions, err := a.getQuestionsBySurveyID(surveyID)
 	if err != nil {
+		log.Printf("Error getting questions for survey %d: %v", surveyID, err)
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Validate answers
 	if err := a.validateAnswers(questions, req.Answers); err != nil {
+		log.Printf("Validation failed for survey %d, user %d: %v", surveyID, userID, err)
 		respondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -924,4 +944,43 @@ func (a *App) validateAnswers(questions []models.SurveyQuestion, answers []Answe
 	}
 
 	return nil
+}
+
+func (a *App) checkSurveyResponseStatus(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	surveyID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid survey ID")
+		return
+	}
+
+	userIDStr := r.Header.Get("X-User-Id")
+	if userIDStr == "" {
+		respondWithError(w, http.StatusUnauthorized, "User ID required")
+		return
+	}
+
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	// Check if user already responded
+	var responseID int
+	err = a.DB.QueryRow("SELECT id FROM survey_responses WHERE survey_id = $1 AND user_id = $2", surveyID, userID).Scan(&responseID)
+
+	if err == nil {
+		respondWithJSON(w, http.StatusOK, map[string]interface{}{
+			"has_responded": true,
+			"response_id":   responseID,
+			"message":       "User has already responded to this survey",
+		})
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"has_responded": false,
+		"message":       "User has not responded to this survey",
+	})
 }

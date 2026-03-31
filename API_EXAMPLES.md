@@ -8,7 +8,37 @@
 - `X-User-Id: <user_id>` - ID пользователя (1=admin, 2=employee, 3=employee)
 - `Content-Type: application/json` - для POST/PUT запросов
 
-## 👥 Пользователи по умолчанию:
+## � Быстрый старт
+
+### 1. Запуск приложения (Docker)
+```bash
+cp .env.example .env
+docker-compose up -d
+```
+
+### 2. Проверка работы API
+```bash
+curl http://localhost:8080/users
+```
+
+### 3. Минификация файлов (для продакшена)
+```bash
+# JS файлы
+for f in static/js/*.js; do
+  if [[ ! $f =~ \.min\.js$ ]]; then
+    npx terser "$f" -o "${f%.js}.min.js" -c -m
+  fi
+done
+
+# CSS файлы
+for f in static/css/*.css; do
+  if [[ ! $f =~ \.min\.css$ ]]; then
+    npx clean-css-cli -o "${f%.css}.min.css" "$f"
+  fi
+done
+```
+
+## �👥 Пользователи по умолчанию:
 
 | ID | Имя | Роль |
 |----|-----|------|

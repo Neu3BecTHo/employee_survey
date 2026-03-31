@@ -132,13 +132,12 @@ class SurveyApp {
         try {
             const data = {
                 title: formData.get('title'),
-                description: formData.get('description')
+                description: formData.get('description'),
+                status: 'draft'  // Add default status to satisfy database constraint
             };
             
-            console.log('Creating survey with data:', data);
-            console.log('Current user:', this.currentUser);
             
-            const response = await this.apiRequest('/api/surveys', {
+            const response = await this.apiRequest('/surveys', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -146,7 +145,6 @@ class SurveyApp {
                 body: JSON.stringify(data)
             });
             
-            console.log('Survey created response:', response);
 
             // Reload surveys list
             if (window.surveysPage) {
@@ -155,7 +153,6 @@ class SurveyApp {
 
             this.showMessage('Опрос успешно создан!', 'success');
         } catch (error) {
-            console.error('Error creating survey:', error);
             this.showMessage('Ошибка при создании опроса', 'error');
         }
     }
@@ -179,44 +176,53 @@ class SurveyApp {
         return response.json();
     }
 
-    showMessage(message, type = 'info') {
-        // Remove existing messages
-        const existingMessages = document.querySelectorAll('.message');
-        existingMessages.forEach(msg => msg.remove());
+    showMessage(message, type = 'info', title = '') {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(toast => {
+            toast.classList.add('hiding');
+            setTimeout(() => toast.remove(), 300);
+        });
 
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message message-${type}`;
-        messageDiv.textContent = message;
-
-        // Style the message
-        messageDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem;
-            border-radius: 6px;
-            color: white;
-            font-weight: 500;
-            z-index: 1000;
-            max-width: 300px;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        
+        // Add icon based on type
+        const icons = {
+            success: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+            error: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+            warning: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+            info: '<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+        };
+        
+        const titles = {
+            success: 'Успех',
+            error: 'Ошибка',
+            warning: 'Внимание',
+            info: 'Информация'
+        };
+        
+        const displayTitle = title || titles[type] || titles.info;
+        
+        toast.innerHTML = `
+            ${icons[type] || icons.info}
+            <div class="toast-content">
+                <div class="toast-title">${displayTitle}</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.classList.add('hiding'); setTimeout(() => this.parentElement.remove(), 300)">×</button>
+            <div class="toast-progress"></div>
         `;
 
-        if (type === 'success') {
-            messageDiv.style.backgroundColor = '#28a745';
-        } else if (type === 'error') {
-            messageDiv.style.backgroundColor = '#dc3545';
-        } else {
-            messageDiv.style.backgroundColor = '#007bff';
-        }
+        document.body.appendChild(toast);
 
-        document.body.appendChild(messageDiv);
-
-        // Auto remove after 3 seconds
+        // Auto-remove after 4 seconds
         setTimeout(() => {
-            if (messageDiv.parentNode) {
-                messageDiv.remove();
+            if (toast.parentNode) {
+                toast.classList.add('hiding');
+                setTimeout(() => toast.remove(), 300);
             }
-        }, 3000);
+        }, 4000);
     }
 
     formatDate(dateString) {

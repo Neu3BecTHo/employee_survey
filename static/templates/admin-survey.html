@@ -6,8 +6,18 @@
     <title>Редактирование опроса - Опросы сотрудников</title>
     <meta name="description" content="Редактирование опроса сотрудников">
     <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    {{if .DevMode}}
     <link rel="stylesheet" href="/static/css/base.css">
-    <link rel="stylesheet" href="/static/css/admin-survey.css">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/admin-survey.js"></script>
+    {{else}}
+    <link rel="stylesheet" href="/static/css/base.min.css">
+    <link rel="stylesheet" href="/static/css/components.min.css">
+    <script src="/static/js/app.min.js"></script>
+    <script src="/static/js/admin-survey.min.js"></script>
+    {{end}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -16,7 +26,7 @@
     <header>
         <nav>
             <div class="nav-container">
-                <h1>Опросы сотрудников</h1>
+                <div class="nav-logo">Опросы сотрудников</div>
                 <div class="nav-user">
                     <div class="user-info">
                         <span id="current-user">Загрузка...</span>
@@ -29,152 +39,100 @@
     </header>
 
     <main>
-        <div id="loading" class="loading">
-            Загрузка опроса...
-        </div>
-        
-        <div id="error-message" class="error-message" style="display: none;">
-            Ошибка загрузки опроса.
-        </div>
+        <div class="container">
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <span>Загрузка опроса...</span>
+            </div>
+            
+            <div id="error-message" class="message message-error hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Ошибка загрузки опроса</span>
+            </div>
 
-        <div id="survey-container" style="display: none;">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Редактирование опроса</h2>
-                    <div class="form-actions">
-                        <button onclick="window.location.href='/admin/surveys'" class="btn btn-secondary">
-                            ← К опросам
+            <div id="survey-container" class="hidden">
+                <div class="page-header survey-header-section">
+                    <div class="survey-header-flex">
+                        <div class="survey-status-wrapper">
+                            <span id="survey-status-badge" class="survey-status status-draft">Черновик</span>
+                        </div>
+                        <button onclick="window.location.href='/'" class="btn btn-secondary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Назад к опросам
                         </button>
                     </div>
+                    <h1>Редактирование опроса</h1>
+                    <p class="survey-description">Управление опросом и вопросами</p>
                 </div>
 
-                <form id="edit-survey-form" class="survey-form">
-                    <div class="form-group">
-                        <label for="title">Название опроса</label>
-                        <input type="text" id="title" name="title" required placeholder="Введите название опроса">
+                <div class="card admin-survey-info-card">
+                    <div class="card-header admin-survey-info-header">
+                        <h3 class="admin-survey-info-title">Основная информация</h3>
                     </div>
-                    <div class="form-group">
-                        <label for="description">Описание</label>
-                        <textarea id="description" name="description" rows="3" placeholder="Введите описание опроса"></textarea>
+                    <div class="card-body">
+                        <form id="edit-survey-form">
+                            <div class="form-group">
+                                <label for="title">Название опроса</label>
+                                <input type="text" id="title" name="title" required placeholder="Введите название опроса">
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Описание</label>
+                                <textarea id="description" name="description" rows="3" placeholder="Введите описание опроса"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Статус опроса</label>
+                                <select id="status" name="status">
+                                    <option value="draft">Черновик</option>
+                                    <option value="open">Открыт</option>
+                                    <option value="closed">Закрыт</option>
+                                </select>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                        <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                        <polyline points="7 3 7 8 15 8"></polyline>
+                                    </svg>
+                                    Сохранить изменения
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="form-group">
-                        <label for="status">Статус опроса</label>
-                        <select id="status" name="status">
-                            <option value="draft">📝 Черновик</option>
-                            <option value="open">📢 Открыт</option>
-                            <option value="closed">🔒 Закрыт</option>
-                        </select>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            💾 Сохранить изменения
-                        </button>
-                    </div>
-                </form>
+                </div>
 
-                <div class="questions-section">
-                    <div class="section-header">
-                        <h3>📋 Вопросы опроса</h3>
-                        <button id="add-question-btn" class="btn btn-success">
-                            ➕ Добавить вопрос
-                        </button>
-                    </div>
-                    <div id="questions-container">
-                        <!-- Questions will be loaded here -->
-                    </div>
+                <div class="questions-toolbar">
+                    <h2 class="questions-toolbar-title">Вопросы опроса</h2>
+                    <button id="add-question-btn" class="btn btn-success">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Добавить вопрос
+                    </button>
+                </div>
+                
+                <div id="questions-container">
+                    <!-- Questions will be loaded here -->
+                </div>
 
-                    <!-- Add Question Modal -->
-<div id="add-question-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>➕ Добавить новый вопрос</h2>
-            <button class="modal-close" onclick="adminSurveyPage.hideAddQuestionModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="add-question-form" class="question-form">
-                <div class="form-group">
-                    <label for="question-text">Текст вопроса</label>
-                    <textarea id="question-text" name="text" required placeholder="Введите текст вопроса"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="question-type">Тип вопроса</label>
-                    <select id="question-type" name="type" required>
-                        <option value="text">📝 Текстовый ответ</option>
-                        <option value="single_choice">📢 Выбор варианта</option>
-                    </select>
-                </div>
-                <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="question-required" name="is_required">
-                        Обязательный вопрос
-                    </label>
-                </div>
-                <div class="form-group" id="options-group" style="display: none;">
-                    <label>Варианты ответа</label>
-                    <div id="options-container">
-                        <!-- Options will be added dynamically -->
+                <div id="empty-questions" class="empty-state hidden">
+                    <div class="empty-state-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
                     </div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="adminSurveyPage.addOption()">
-                        ➕ Добавить вариант
-                    </button>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="adminSurveyPage.hideAddQuestionModal()">
-                        Отмена
-                    </button>
-                    <button type="submit" class="btn btn-primary">Добавить вопрос</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-                    <!-- Edit Question Modal -->
-<div id="edit-question-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>✏️ Редактировать вопрос</h2>
-            <button class="modal-close" onclick="adminSurveyPage.hideEditQuestionModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-            <form id="edit-question-form" class="question-form">
-                <input type="hidden" id="edit-question-id" name="question-id">
-                <div class="form-group">
-                    <label for="edit-question-text">Текст вопроса</label>
-                    <textarea id="edit-question-text" name="text" required placeholder="Введите текст вопроса"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="edit-question-type">Тип вопроса</label>
-                    <select id="edit-question-type" name="type" required>
-                        <option value="text">📝 Текстовый ответ</option>
-                        <option value="single_choice">📢 Выбор варианта</option>
-                    </select>
-                </div>
-                <div class="form-group checkbox-group">
-                    <label>
-                        <input type="checkbox" id="edit-question-required" name="is_required">
-                        Обязательный вопрос
-                    </label>
-                </div>
-                <div class="form-group" id="edit-options-group" style="display: none;">
-                    <label>Варианты ответа</label>
-                    <div id="edit-options-container">
-                        <!-- Options will be added dynamically -->
-                    </div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="adminSurveyPage.addEditOption()">
-                        ➕ Добавить вариант
-                    </button>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="adminSurveyPage.hideEditQuestionModal()">
-                        Отмена
-                    </button>
-                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+                    <h3>Нет вопросов</h3>
+                    <p>Добавьте первый вопрос к опросу</p>
                 </div>
             </div>
         </div>
@@ -182,42 +140,134 @@
 
     <footer>
         <div class="footer-container">
-            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+            <p>&copy; 2026 Система внутренних опросов. Все права защищены.</p>
         </div>
     </footer>
 
-    <!-- Custom Confirm Modal -->
-    <div id="confirm-modal" class="modal" style="display: none;">
-        <div class="modal-content modal-sm">
+    <!-- Add Question Modal -->
+    <div id="add-question-modal" class="modal hidden">
+        <div class="modal-content">
             <div class="modal-header">
-                <h3 id="confirm-title">⚠️ Подтверждение</h3>
+                <h3>Добавить новый вопрос</h3>
+                <button class="modal-close" onclick="adminSurveyPage.hideAddQuestionModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="add-question-form">
+                    <div class="form-group">
+                        <label for="question-text">Текст вопроса</label>
+                        <textarea id="question-text" name="text" rows="3" required placeholder="Введите текст вопроса"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-type">Тип вопроса</label>
+                        <select id="question-type" name="type">
+                            <option value="single_choice">Один вариант ответа</option>
+                            <option value="text">Текстовый ответ</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-wrapper">
+                        <input type="checkbox" id="question-required" name="required">
+                        <label for="question-required">Обязательный вопрос</label>
+                    </div>
+                    <div id="options-section" class="form-group hidden">
+                        <label>Варианты ответа</label>
+                        <div id="options-container">
+                            <!-- Options will be added here -->
+                        </div>
+                        <button type="button" id="add-option-btn" class="btn btn-secondary btn-sm btn-margin-top">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Добавить вариант
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="adminSurveyPage.hideAddQuestionModal()">Отмена</button>
+                <button type="submit" form="add-question-form" class="btn btn-primary">Добавить вопрос</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Question Modal -->
+    <div id="edit-question-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Редактировать вопрос</h3>
+                <button class="modal-close" onclick="adminSurveyPage.hideEditQuestionModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-question-form">
+                    <input type="hidden" id="edit-question-id" name="question_id">
+                    <div class="form-group">
+                        <label for="edit-question-text">Текст вопроса</label>
+                        <textarea id="edit-question-text" name="text" rows="3" required placeholder="Введите текст вопроса"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-question-type">Тип вопроса</label>
+                        <select id="edit-question-type" name="type">
+                            <option value="single_choice">Один вариант ответа</option>
+                            <option value="text">Текстовый ответ</option>
+                        </select>
+                    </div>
+                    <div class="form-group checkbox-wrapper">
+                        <input type="checkbox" id="edit-question-required" name="required">
+                        <label for="edit-question-required">Обязательный вопрос</label>
+                    </div>
+                    <div id="edit-options-section" class="form-group hidden">
+                        <label>Варианты ответа</label>
+                        <div id="edit-options-container">
+                            <!-- Options will be added here -->
+                        </div>
+                        <button type="button" id="edit-add-option-btn" class="btn btn-secondary btn-sm btn-margin-top">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Добавить вариант
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="adminSurveyPage.hideEditQuestionModal()">Отмена</button>
+                <button type="submit" form="edit-question-form" class="btn btn-primary">Сохранить изменения</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirm-title">Подтверждение</h3>
+                <button class="modal-close" onclick="adminSurveyPage.hideConfirmModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
             </div>
             <div class="modal-body">
                 <p id="confirm-message">Вы уверены?</p>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="adminSurveyPage.hideConfirmModal()">Отмена</button>
-                <button class="btn btn-danger" id="confirm-btn">Подтвердить</button>
+                <button type="button" class="btn btn-secondary" onclick="adminSurveyPage.hideConfirmModal()">Отмена</button>
+                <button type="button" id="confirm-btn" class="btn btn-danger">Подтвердить</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Alert Modal -->
-    <div id="alert-modal" class="modal" style="display: none;">
-        <div class="modal-content modal-sm">
-            <div class="modal-header">
-                <h3 id="alert-title">ℹ️ Уведомление</h3>
-            </div>
-            <div class="modal-body">
-                <p id="alert-message">Сообщение</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" onclick="adminSurveyPage.hideAlertModal()">ОК</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="/static/js/app.js"></script>
-    <script src="/static/js/admin-survey.js?v=4"></script>
 </body>
 </html>

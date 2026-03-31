@@ -20,15 +20,15 @@ class MyResponsesPage {
         const responsesList = document.getElementById('responses-list');
 
         try {
-            loading.style.display = 'block';
-            errorMessage.style.display = 'none';
-            responsesContainer.style.display = 'none';
+            loading.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+            responsesContainer.classList.add('hidden');
 
-            const responses = await window.app.apiRequest('/api/surveys/my');
+            const responses = await window.app.apiRequest('/surveys/my/data');
             this.responses = responses;
 
-            loading.style.display = 'none';
-            responsesContainer.style.display = 'block';
+            loading.classList.add('hidden');
+            responsesContainer.classList.remove('hidden');
 
             if (!responses || responses.length === 0) {
                 responsesList.innerHTML = '<div class="empty-state"><h2>Ответов пока нет</h2><p>Вы еще не прошли ни одного опроса.</p></div>';
@@ -38,9 +38,8 @@ class MyResponsesPage {
             this.renderResponses();
 
         } catch (error) {
-            console.error('Error loading my responses:', error);
-            loading.style.display = 'none';
-            errorMessage.style.display = 'block';
+            loading.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
             errorMessage.textContent = 'Ошибка загрузки ответов.';
         }
     }
@@ -48,24 +47,42 @@ class MyResponsesPage {
     renderResponses() {
         const responsesList = document.getElementById('responses-list');
         responsesList.innerHTML = '';
+        responsesList.className = 'surveys-grid'; // Use same grid as surveys
 
         this.responses.forEach(response => {
-            const responseDiv = document.createElement('div');
-            responseDiv.className = 'response-card';
-            responseDiv.innerHTML = `
+            const responseCard = document.createElement('div');
+            responseCard.className = 'response-card';
+            
+            responseCard.innerHTML = `
                 <div class="response-header">
                     <h3>${response.survey_title}</h3>
-                    <span class="response-date">${new Date(response.submitted_at).toLocaleDateString('ru-RU')}</span>
+                    <div class="response-date">
+                        ${new Date(response.submitted_at).toLocaleDateString('ru-RU')}
+                    </div>
                 </div>
                 <div class="response-content">
                     <p>${response.survey_description || 'Без описания'}</p>
                     <div class="response-actions">
-                        <button onclick="window.location.href='/surveys/responses/${response.id}'" class="btn btn-secondary btn-sm">📝 Просмотреть мои ответы</button>
-                        <button onclick="window.location.href='/surveys/${response.survey_id}/results'" class="btn btn-secondary btn-sm">📊 Результаты опроса</button>
+                        <a href="/surveys/responses/${response.id}" class="btn btn-primary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                            </svg>
+                            Мои ответы
+                        </a>
+                        <a href="/surveys/${response.survey_id}/results" class="btn btn-secondary btn-sm">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 3v18h18"></path>
+                                <rect x="7" y="10" width="4" height="9"></rect>
+                                <rect x="15" y="6" width="4" height="13"></rect>
+                            </svg>
+                            Результаты
+                        </a>
                     </div>
                 </div>
             `;
-            responsesList.appendChild(responseDiv);
+            responsesList.appendChild(responseCard);
         });
     }
 }
