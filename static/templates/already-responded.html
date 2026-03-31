@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Опрос уже пройден - Опросы сотрудников</title>
+    <meta name="description" content="Вы уже прошли этот опрос">
+    <link rel="stylesheet" href="/static/css/base.css">
+    <link rel="stylesheet" href="/static/css/survey.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="nav-container">
+                <div class="nav-logo">Опросы сотрудников</div>
+                <div class="nav-user">
+                    <div class="user-info">
+                        <span id="current-user">Загрузка...</span>
+                        <span id="user-role" class="role-text">Загрузка...</span>
+                    </div>
+                    <button id="logout-btn" class="btn btn-secondary">Выйти</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Опрос уже пройден</h1>
+        <div class="container">
+            <div class="survey-card" style="text-align: center; padding: 40px;">
+                <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+                <h2>Вы уже прошли этот опрос!</h2>
+                <p style="margin: 20px 0; color: var(--text-secondary);">
+                    Спасибо за ваше участие. Вы можете посмотреть свои ответы в разделе "Мои ответы".
+                </p>
+                <div class="form-actions" style="justify-content: center; margin-top: 30px;">
+                    <a href="/surveys/my" class="btn btn-primary">
+                        📋 Мои ответы
+                    </a>
+                    <a href="/" class="btn btn-secondary">
+                        ← Назад к опросам
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <p>&copy; 2026 Система внутренних опросов. Все права защищены.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+    <script>
+        // Initialize app to show user info
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.app) {
+                window.app.loadCurrentUser();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"log"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -67,11 +69,101 @@ func (a *App) runMigrations() error {
 	return nil
 }
 
+// Static file server with proper MIME type handling
+func (a *App) staticFileHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	log.Printf("Static file request: %s", path)
+
+	// Remove /static/ prefix and construct file path
+	filePath := "." + path
+
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("Error reading file %s: %v", filePath, err)
+		http.NotFound(w, r)
+		return
+	}
+
+	// Get file extension and set content type explicitly
+	ext := filepath.Ext(filePath)
+	var contentType string
+	switch ext {
+	case ".js":
+		contentType = "application/javascript"
+		log.Printf("Setting MIME type for JS file: %s -> %s", filePath, contentType)
+	case ".css":
+		contentType = "text/css"
+		log.Printf("Setting MIME type for CSS file: %s -> %s", filePath, contentType)
+	case ".html":
+		contentType = "text/html"
+	case ".png":
+		contentType = "image/png"
+	case ".jpg", ".jpeg":
+		contentType = "image/jpeg"
+	case ".gif":
+		contentType = "image/gif"
+	case ".svg":
+		contentType = "image/svg+xml"
+	default:
+		contentType = "application/octet-stream"
+	}
+
+	// Set proper MIME type and write response
+	w.Header().Set("Content-Type", contentType)
+	log.Printf("Final Content-Type header: %s, file size: %d bytes", contentType, len(content))
+	w.Write(content)
+}
+
+// customFileServer wraps http.FileServer and sets proper MIME types
+type customFileServer struct {
+	root http.FileSystem
+}
+
+func (cfs *customFileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Get the file extension from URL
+	ext := filepath.Ext(r.URL.Path)
+
+	// Set Content-Type based on extension before serving
+	switch ext {
+	case ".js":
+		w.Header().Set("Content-Type", "application/javascript")
+	case ".css":
+		w.Header().Set("Content-Type", "text/css")
+	case ".html":
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	case ".png":
+		w.Header().Set("Content-Type", "image/png")
+	case ".jpg", ".jpeg":
+		w.Header().Set("Content-Type", "image/jpeg")
+	case ".gif":
+		w.Header().Set("Content-Type", "image/gif")
+	case ".svg":
+		w.Header().Set("Content-Type", "image/svg+xml")
+	}
+
+	// Serve the file
+	http.FileServer(cfs.root).ServeHTTP(w, r)
+}
+
 func (a *App) initializeRoutes() {
+	// Register MIME types explicitly (needed for Alpine Linux in Docker)
+	mime.AddExtensionType(".js", "application/javascript")
+	mime.AddExtensionType(".css", "text/css")
+	mime.AddExtensionType(".html", "text/html")
+	mime.AddExtensionType(".png", "image/png")
+	mime.AddExtensionType(".jpg", "image/jpeg")
+	mime.AddExtensionType(".jpeg", "image/jpeg")
+	mime.AddExtensionType(".gif", "image/gif")
+	mime.AddExtensionType(".svg", "image/svg+xml")
+
+	log.Println("MIME types registered successfully")
+
 	// Frontend routes (must be first to avoid conflicts with API)
 	a.Router.HandleFunc("/", a.serveIndex).Methods("GET")
 	a.Router.HandleFunc("/login", a.serveLogin).Methods("GET")
 	a.Router.HandleFunc("/surveys/{id:[0-9]+}/take", a.serveSurvey).Methods("GET")
+	a.Router.HandleFunc("/surveys/{id:[0-9]+}/already-responded", a.serveAlreadyResponded).Methods("GET")
 	a.Router.HandleFunc("/surveys/my", a.serveMyResponses).Methods("GET")
 	a.Router.HandleFunc("/surveys/responses/{responseId:[0-9]+}", a.serveMyResponseDetail).Methods("GET")
 	a.Router.HandleFunc("/admin/surveys", a.serveAdminSurveys).Methods("GET")
@@ -82,14 +174,12 @@ func (a *App) initializeRoutes() {
 	// Public endpoints (with /api prefix)
 	a.Router.HandleFunc("/api/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/api/surveys", a.getSurveys).Methods("GET")
+	a.Router.HandleFunc("/api/surveys/my", a.getMyResponses).Methods("GET")
+	a.Router.HandleFunc("/api/surveys/responses/{responseId:[0-9]+}", a.getResponseDetail).Methods("GET")
+	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/check-status", a.checkSurveyResponseStatus).Methods("GET")
 	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}", a.getSurvey).Methods("GET")
 	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/responses", a.submitResponse).Methods("POST")
 	a.Router.HandleFunc("/api/surveys/{id:[0-9]+}/results", a.getResults).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/my", a.getMyResponses).Methods("GET")
-	a.Router.HandleFunc("/api/surveys/responses/{responseId:[0-9]+}", a.getResponseDetail).Methods("GET")
-
-	// Public endpoints (without /api prefix - according to TZ)
-	a.Router.HandleFunc("/users", a.getUsers).Methods("GET")
 	a.Router.HandleFunc("/surveys", a.getSurveys).Methods("GET")
 	a.Router.HandleFunc("/surveys/{id:[0-9]+}", a.getSurvey).Methods("GET")
 	a.Router.HandleFunc("/surveys/{id:[0-9]+}/responses", a.submitResponse).Methods("POST")
@@ -112,8 +202,8 @@ func (a *App) initializeRoutes() {
 	a.Router.Handle("/surveys/{id:[0-9]+}/open", a.requireRole("admin")(http.HandlerFunc(a.openSurvey))).Methods("POST")
 	a.Router.Handle("/surveys/{id:[0-9]+}/close", a.requireRole("admin")(http.HandlerFunc(a.closeSurvey))).Methods("POST")
 
-	// Static files
-	a.Router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
+	// Static files with custom MIME type handling
+	a.Router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", &customFileServer{root: http.Dir("./static/")}))
 }
 
 func (a *App) Run(addr string) {
@@ -208,6 +298,10 @@ func (a *App) serveLogin(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) serveSurvey(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./static/templates/take-survey.html")
+}
+
+func (a *App) serveAlreadyResponded(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./static/templates/already-responded.html")
 }
 
 func (a *App) serveAdminSurveys(w http.ResponseWriter, r *http.Request) {

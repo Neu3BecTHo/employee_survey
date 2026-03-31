@@ -13,7 +13,27 @@ class TakeSurveyPage {
     }
 
     async init() {
+        // First check if user already responded to this survey
+        const hasResponded = await this.checkResponseStatus();
+        if (hasResponded) {
+            return; // Don't load the form, redirect handled in checkResponseStatus
+        }
         await this.loadSurvey();
+    }
+
+    async checkResponseStatus() {
+        try {
+            const response = await window.app.apiRequest(`/api/surveys/${this.surveyId}/check-status`);
+            if (response.has_responded) {
+                // Redirect to already responded page
+                window.location.href = `/surveys/${this.surveyId}/already-responded`;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error checking response status:', error);
+            return false;
+        }
     }
 
     async loadSurvey() {

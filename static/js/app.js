@@ -132,7 +132,8 @@ class SurveyApp {
         try {
             const data = {
                 title: formData.get('title'),
-                description: formData.get('description')
+                description: formData.get('description'),
+                status: 'draft'  // Add default status to satisfy database constraint
             };
             
             console.log('Creating survey with data:', data);

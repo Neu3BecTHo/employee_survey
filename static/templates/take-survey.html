@@ -16,7 +16,7 @@
     <header>
         <nav>
             <div class="nav-container">
-                <h1>Опросы сотрудников</h1>
+                <div class="nav-logo">Опросы сотрудников</div>
                 <div class="nav-user">
                     <div class="user-info">
                         <span id="current-user">Загрузка...</span>
@@ -29,6 +29,7 @@
     </header>
 
     <main>
+        <h1>Прохождение опроса</h1>
         <div id="loading" class="loading">
             Загрузка опроса...
         </div>
@@ -53,22 +54,27 @@
                         <button type="button" onclick="window.location.href='/'" class="btn btn-secondary">
                             ← Назад к опросам
                         </button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" id="submit-btn" class="btn btn-primary">
                             Отправить ответы
                         </button>
                     </div>
                 </form>
+
+                <div id="success-message" class="success-message" style="display: none;">
+                    <h3>✅ Ответы успешно отправлены!</h3>
+                    <p>Спасибо за прохождение опроса.</p>
+                </div>
             </div>
         </div>
     </main>
 
     <footer>
         <div class="footer-container">
-            <p>&copy; 2024 Система внутренних опросов. Все права защищены.</p>
+            <p>&copy; 2026 Система внутренних опросов. Все права защищены.</p>
         </div>
     </footer>
 
     <script src="/static/js/app.js"></script>
-    <script src="/static/js/survey.js"></script>
+    <script src="/static/js/take-survey.js"></script>
 </body>
 </html>

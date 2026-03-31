@@ -218,7 +218,35 @@ func TestSurveyStatusTransitions(t *testing.T) {
 	}
 }
 
-// Test 8: Required questions
+// Test 8: Cannot submit response to closed survey
+func TestClosedSurveyResponse(t *testing.T) {
+	db, err := sql.Open("postgres", "host=localhost port=5432 user=survey_user password=survey_pass dbname=survey_app sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	// Create a test survey with closed status
+	var surveyID int
+	err = db.QueryRow("INSERT INTO surveys (title, description, status) VALUES ('Closed Test Survey', 'Test', 'closed') RETURNING id").Scan(&surveyID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Try to insert a response to closed survey
+	_, err = db.Exec("INSERT INTO survey_responses (survey_id, user_id) VALUES ($1, 1)", surveyID)
+	if err == nil {
+		t.Error("Should not be able to insert response to closed survey")
+	}
+
+	// Clean up
+	_, err = db.Exec("DELETE FROM surveys WHERE id = $1", surveyID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// Test 9: Required questions
 func TestRequiredQuestions(t *testing.T) {
 	db, err := sql.Open("postgres", "host=localhost port=5432 user=survey_user password=survey_pass dbname=survey_app sslmode=disable")
 	if err != nil {
