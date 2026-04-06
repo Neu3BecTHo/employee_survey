@@ -74,6 +74,46 @@ class SurveyApp {
         if (createSurveyBtn) {
             createSurveyBtn.addEventListener('click', () => this.showCreateSurveyModal());
         }
+
+        // Modal close buttons
+        const modal = document.getElementById('create-survey-modal');
+        if (modal) {
+            const closeBtn = modal.querySelector('.modal-close');
+            const cancelBtn = modal.querySelector('.modal-cancel');
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.hideCreateSurveyModal());
+            }
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => this.hideCreateSurveyModal());
+            }
+
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this.hideCreateSurveyModal();
+                }
+            });
+        }
+
+        // Form submission - один раз при инициализации
+        const form = document.getElementById('create-survey-form');
+        if (form && !form._handlerAttached) {
+            form._handlerAttached = true;
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                // Предотвращаем двойную отправку
+                if (form._isSubmitting) return;
+                form._isSubmitting = true;
+                
+                await this.createSurvey(new FormData(form));
+                this.hideCreateSurveyModal();
+                
+                // Сбрасываем флаг после небольшой задержки
+                setTimeout(() => {
+                    form._isSubmitting = false;
+                }, 500);
+            });
+        }
     }
 
     logout() {
@@ -86,34 +126,7 @@ class SurveyApp {
 
     showCreateSurveyModal() {
         const modal = document.getElementById('create-survey-modal');
-        const form = document.getElementById('create-survey-form');
-
         modal.style.display = 'flex';
-
-        // Close modal handlers
-        const closeBtn = modal.querySelector('.modal-close');
-        const cancelBtn = modal.querySelector('.modal-cancel');
-
-        const closeModal = () => {
-            modal.style.display = 'none';
-            form.reset();
-        };
-
-        closeBtn.addEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
-        });
-
-        // Form submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.createSurvey(new FormData(form));
-            closeModal();
-        });
     }
 
     hideCreateSurveyModal() {

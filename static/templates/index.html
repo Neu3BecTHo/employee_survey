@@ -92,11 +92,11 @@
     </main>
 
     <!-- Create Survey Modal -->
-    <div id="create-survey-modal" class="modal-overlay hidden">
-        <div class="modal">
+    <div id="create-survey-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
             <div class="modal-header">
                 <h3>Создать новый опрос</h3>
-                <button class="modal-close" onclick="window.surveyApp.hideCreateSurveyModal()">
+                <button class="modal-close" onclick="window.app.hideCreateSurveyModal()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -116,7 +116,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary modal-cancel" onclick="window.surveyApp.hideCreateSurveyModal()">Отмена</button>
+                <button type="button" class="btn btn-secondary modal-cancel" onclick="window.app.hideCreateSurveyModal()">Отмена</button>
                 <button type="submit" form="create-survey-form" class="btn btn-primary">Создать опрос</button>
             </div>
         </div>
