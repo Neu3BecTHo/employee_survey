@@ -19,8 +19,8 @@ class SurveysPage {
         const createBtn = document.getElementById('create-survey-btn');
         if (createBtn) {
             createBtn.addEventListener('click', () => {
-                if (window.surveyApp) {
-                    window.surveyApp.showCreateSurveyModal();
+                if (window.app) {
+                    window.app.showCreateSurveyModal();
                 }
             });
         }
@@ -90,7 +90,7 @@ class SurveysPage {
                 <div class="empty-state">
                     <h2>Опросов пока нет</h2>
                     <p>${this.currentUser && this.currentUser.role === 'admin' ? 'Создайте первый опрос для начала работы.' : 'Опросы появятся здесь, когда администраторы их создадут.'}</p>
-                    ${this.currentUser && this.currentUser.role === 'admin' ? '<button class="btn btn-primary" onclick="window.surveyApp.showCreateSurveyModal()">➕ Создать опрос</button>' : ''}
+                    ${this.currentUser && this.currentUser.role === 'admin' ? '<button class="btn btn-primary" onclick="window.app.showCreateSurveyModal()">➕ Создать опрос</button>' : ''}
                 </div>
             `;
             return;
